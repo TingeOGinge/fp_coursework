@@ -35,7 +35,7 @@ testData = [
 --
 
 displayCityNames :: [Place] -> [String]
-displayCityNames n = [x | (Place x coords rainfall) <- n]
+displayCityNames = map(\(Place name c r) -> name)
 
 getCityByName :: String -> [Place] -> Place
 getCityByName n ((Place name c r):xs)
