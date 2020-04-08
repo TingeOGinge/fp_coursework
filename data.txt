@@ -1,0 +1,42 @@
+This file consists of the data that you should use in your Haskell program.
+
+Your program should not process this file directly; rather, it needs to process
+a Haskell list containing the data given in this file.
+
+After you have worked out a suitable Place datatype you should include the data
+from this file (without any modifications) or additions in your program as a 
+value of type [Place]; i.e.:
+
+  testData :: [Place]
+  testData = [ ... the 14 values values ... ]
+
+This data should be used to demonstrate the correctness of your program in the 
+in-class demonstration. 
+
+If you manage to complete loading and saving of data, make sure that the 
+testData list value is also stored (without any modifications or additions) 
+in a places.txt file. Regardless of whether you have implemented a user
+interface or loading/saving, make sure that you also complete the demo 
+function in your program.
+
+The data for each place includes a name, a location expressed in degrees north 
+and degrees east (almost all degrees east figures are negative since most 
+places are in the western hemisphere), and a list of 7 daily rainfall figures 
+for the last week (where the first value is for yesterday and the final value 
+is for one week ago).
+
+London       51.5  -0.1   0, 0, 5, 8, 8, 0, 0
+Cardiff      51.5  -3.2   12, 8, 15, 0, 0, 0, 2
+Norwich      52.6   1.3   0, 6, 5, 0, 0, 0, 3
+Birmingham   52.5  -1.9   0, 2, 10, 7, 8, 2, 2
+Liverpool    53.4  -3.0   8, 16, 20, 3, 4, 9, 2
+Hull         53.8  -0.3   0, 6, 5, 0, 0, 0, 4
+Newcastle    55.0  -1.6   0, 0, 8, 3, 6, 7, 5
+Belfast      54.6  -5.9   10, 18, 14, 0, 6, 5, 2
+Glasgow      55.9  -4.3   7, 5, 3, 0, 6, 5, 0
+Plymouth     50.4  -4.1   4, 9, 0, 0, 0, 6, 5
+Aberdeen     57.1  -2.1   0, 0, 6, 5, 8, 2, 0
+Stornoway    58.2  -6.4   15, 6, 15, 0, 0, 4, 2
+Lerwick      60.2  -1.1   8, 10, 5, 5, 0, 0, 3
+St Helier    49.2  -2.1   0, 0, 0, 0, 6, 10, 0
+
