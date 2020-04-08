@@ -34,8 +34,8 @@ testData = [
 --  Your functional code goes here
 --
 
-displayCityNames :: [Place] -> [String]
-displayCityNames = map(\(Place name c r) -> name)
+displayCityNames :: [Place] -> String
+displayCityNames = unlines . map(\(Place name c r) -> name)
 
 getCityByName :: String -> [Place] -> Place
 getCityByName n ((Place name c r):xs)
@@ -43,27 +43,40 @@ getCityByName n ((Place name c r):xs)
  | otherwise = getCityByName n xs
 
 getCityRainAvg :: Place -> Float
-getCityRainAvg (Place n c rainfall) = sum rainfall / fromIntegral (length rainfall)
+getCityRainAvg (Place n c rainf) = sum rainf / fromIntegral (length rainf)
 
-displayCityRainAvg :: String -> [Place] -> Float
-displayCityRainAvg n c = getCityRainAvg (getCityByName n c)
+displayCityRainAvg :: String -> [Place] -> String
+displayCityRainAvg n c = printf "%.2f" (getCityRainAvg (getCityByName n c))
 
+format2dp :: Float -> String
+format2dp x = printf "%8.2f" x
+
+showRainfallList :: Place -> String
+showRainfallList (Place n c r) = printf "%-10s %s" n (unwords (map format2dp r))
+
+placesToString :: [Place] -> String
+placesToString = unlines . map (showRainfallList)
 
 --
 --  Demo
 --
 --
 demo :: Int -> IO ()
+-- display the names of all the places
 demo 1 = do
   let cities = displayCityNames testData
-  putStr (unlines cities)
+  putStrLn (cities)
+
+-- display, to two decimal places, the average rainfall in Cardiff
 demo 2 = do
   let result = displayCityRainAvg "Cardiff" testData
-  printf "%.2f\n"
+  putStrLn result
 
-  -- display, to two decimal places, the average rainfall in Cardiff
--- demo 3 = putStrLn (placesToString testData)
--- demo 4 = -- display the names of all places that were dry two days ago
+-- display all place names and their 7-day rainfall figures as a single string
+demo 3 = putStrLn (placesToString testData)
+
+-- display the names of all places that were dry two days ago
+-- demo 4 =
 -- demo 5 = -- update the data with most recent rainfall
 --          --[0,8,0,0,5,0,0,3,4,2,0,8,0,0] (and remove oldest rainfall figures)
 -- demo 6 = -- replace "Plymouth" with "Portsmouth" which has
