@@ -57,6 +57,12 @@ showRainfallList (Place n c r) = printf "%-10s %s" n (unwords (map format2dp r))
 placesToString :: [Place] -> String
 placesToString = unlines . map (showRainfallList)
 
+dryInXDays :: Place -> Int -> Bool
+dryInXDays (Place n c rain) x = rain!!(x-1) == 0
+
+dryPlacesInXDays :: Int -> [Place] -> String
+dryPlacesInXDays x = displayCityNames . filter (\p -> (dryInXDays p x))
+
 --
 --  Demo
 --
@@ -76,7 +82,9 @@ demo 2 = do
 demo 3 = putStrLn (placesToString testData)
 
 -- display the names of all places that were dry two days ago
--- demo 4 =
+demo 4 = do
+  let dryCities = dryPlacesInXDays 2 testData
+  putStrLn dryCities
 -- demo 5 = -- update the data with most recent rainfall
 --          --[0,8,0,0,5,0,0,3,4,2,0,8,0,0] (and remove oldest rainfall figures)
 -- demo 6 = -- replace "Plymouth" with "Portsmouth" which has
