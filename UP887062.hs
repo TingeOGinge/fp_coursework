@@ -63,11 +63,24 @@ dryInXDays (Place n c rain) x = rain!!(x-1) == 0
 dryPlacesInXDays :: Int -> [Place] -> String
 dryPlacesInXDays x = displayCityNames . filter (\p -> (dryInXDays p x))
 
-updatePlace :: Float -> Place -> Place
-updatePlace x (Place n c rain) = Place n c (init (x:rain))
+updatePlaceRain :: Float -> Place -> Place
+updatePlaceRain x (Place n c rain) = Place n c (init (x:rain))
 
 updateAllPlaces :: [Float] -> [Place] -> [Place]
-updateAllPlaces = zipWith (updatePlace)
+updateAllPlaces = zipWith (updatePlaceRain)
+
+removePlace:: String -> [Place] -> [Place]
+removePlace s = filter(\(Place n c r) -> n /= s)
+
+addPlace :: Place -> [Place] -> [Place]
+addPlace place list = place:list
+
+updatePlace :: Place -> Place -> Place
+updatePlace (Place n1 c1 r1) (Place n2 c2 r2) = Place n2 c2 r2
+
+replacePlace :: String -> Place -> [Place] -> [Place]
+replacePlace og new list
+  = [if og == n then (updatePlace(getPlace og list) new) else (Place n c r) | (Place n c r) <- list]
 
 --
 --  Demo
@@ -97,9 +110,9 @@ demo 5 = do
   let updatedPlaces = updateAllPlaces [0,8,0,0,5,0,0,3,4,2,0,8,0,0] testData
   putStrLn (placesToString updatedPlaces)
 
---
--- demo 6 = -- replace "Plymouth" with "Portsmouth" which has
---          -- location 50.8 (N), -1.1 (E) and rainfall 0, 0, 3, 2, 5, 2, 1
+demo 6 = do
+  let alteredPlaces = replacePlace "Plymouth" (Place "Portsmouth" (50.8,(-1.1)) [0,0,3,2,5,2,1]) testData
+  putStrLn (placesToString alteredPlaces)
 -- demo 7 = -- display the name of the place closest to 50.9 (N), -1.3 (E)
 --          -- that was dry yesterday
 -- demo 8 = -- display the rainfall map
