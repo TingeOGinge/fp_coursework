@@ -14,20 +14,20 @@ data Place = Place String Coords [Float] deriving (Eq,Ord,Show,Read)
 
 testData :: [Place]
 testData = [
-  Place "London" (51.5, (-0.1)) [0, 0, 5, 8, 8, 0, 0 ],
-  Place "Cardiff" (51.5, (-3.2)) [12, 8, 15, 0, 0, 0, 2],
-  Place "Norwich" (52.6, (1.3)) [0, 6, 5, 0, 0, 0, 3],
+  Place "London"     (51.5, (-0.1)) [0, 0, 5, 8, 8, 0, 0 ],
+  Place "Cardiff"    (51.5, (-3.2)) [12, 8, 15, 0, 0, 0, 2],
+  Place "Norwich"    (52.6, (1.3))  [0, 6, 5, 0, 0, 0, 3],
   Place "Birmingham" (52.5, (-1.9)) [0, 2, 10, 7, 8, 2, 2],
-  Place "Liverpool" (53.4, (-3.0)) [8, 16, 20, 3, 4, 9, 2],
-  Place "Hull" (53.8, (-0.3)) [0, 6, 5, 0, 0, 0, 4],
-  Place "Newcastle" (55.0, (-1.6)) [0, 0, 8, 3, 6, 7, 5],
-  Place "Belfast" (54.6, (-5.9)) [10, 18, 14, 0, 6, 5, 2],
-  Place "Glasgow" (55.9, (-4.3)) [7, 5, 3, 0, 6, 5, 0],
-  Place "Plymouth" (50.4, (-4.1)) [4, 9, 0, 0, 0, 6, 5],
-  Place "Aberdeen" (57.1, (-2.1)) [0, 0, 6, 5, 8, 2, 0],
-  Place "Stornoway" (58.2, (-6.4)) [15, 6, 15, 0, 0, 4, 2],
-  Place "Lerwick" (60.2, (-1.1)) [8, 10, 5, 5, 0, 0, 3],
-  Place "St Helier" (49.2, (-2.1)) [0, 0, 0, 0, 6, 10, 0]
+  Place "Liverpool"  (53.4, (-3.0)) [8, 16, 20, 3, 4, 9, 2],
+  Place "Hull"       (53.8, (-0.3)) [0, 6, 5, 0, 0, 0, 4],
+  Place "Newcastle"  (55.0, (-1.6)) [0, 0, 8, 3, 6, 7, 5],
+  Place "Belfast"    (54.6, (-5.9)) [10, 18, 14, 0, 6, 5, 2],
+  Place "Glasgow"    (55.9, (-4.3)) [7, 5, 3, 0, 6, 5, 0],
+  Place "Plymouth"   (50.4, (-4.1)) [4, 9, 0, 0, 0, 6, 5],
+  Place "Aberdeen"   (57.1, (-2.1)) [0, 0, 6, 5, 8, 2, 0],
+  Place "Stornoway"  (58.2, (-6.4)) [15, 6, 15, 0, 0, 4, 2],
+  Place "Lerwick"    (60.2, (-1.1)) [8, 10, 5, 5, 0, 0, 3],
+  Place "St Helier"  (49.2, (-2.1)) [0, 0, 0, 0, 6, 10, 0]
   ]
 
 --
@@ -63,6 +63,12 @@ dryInXDays (Place n c rain) x = rain!!(x-1) == 0
 dryPlacesInXDays :: Int -> [Place] -> String
 dryPlacesInXDays x = displayCityNames . filter (\p -> (dryInXDays p x))
 
+updatePlace :: Float -> Place -> Place
+updatePlace x (Place n c rain) = Place n c (init (x:rain))
+
+updateAllPlaces :: [Float] -> [Place] -> [Place]
+updateAllPlaces = zipWith (updatePlace)
+
 --
 --  Demo
 --
@@ -85,8 +91,13 @@ demo 3 = putStrLn (placesToString testData)
 demo 4 = do
   let dryCities = dryPlacesInXDays 2 testData
   putStrLn dryCities
--- demo 5 = -- update the data with most recent rainfall
---          --[0,8,0,0,5,0,0,3,4,2,0,8,0,0] (and remove oldest rainfall figures)
+
+-- update the data with most recent rainfall (and remove oldest rainfall figures)
+demo 5 = do
+  let updatedPlaces = updateAllPlaces [0,8,0,0,5,0,0,3,4,2,0,8,0,0] testData
+  putStrLn (placesToString updatedPlaces)
+
+--
 -- demo 6 = -- replace "Plymouth" with "Portsmouth" which has
 --          -- location 50.8 (N), -1.1 (E) and rainfall 0, 0, 3, 2, 5, 2, 1
 -- demo 7 = -- display the name of the place closest to 50.9 (N), -1.3 (E)
