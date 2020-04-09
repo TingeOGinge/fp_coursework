@@ -1,6 +1,5 @@
 --
 -- MATHFUN
--- Template for the Haskell assignment program (replace this comment)
 -- UP887062
 --
 
