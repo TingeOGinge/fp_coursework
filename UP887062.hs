@@ -37,16 +37,14 @@ testData = [
 displayCityNames :: [Place] -> String
 displayCityNames = unlines . map(\(Place name c r) -> name)
 
-getCityByName :: String -> [Place] -> Place
-getCityByName n ((Place name c r):xs)
- | n == name = (Place name c r)
- | otherwise = getCityByName n xs
+getPlace :: String -> [Place] -> Place
+getPlace n = head . filter(\(Place name c r) -> n == name)
 
 getCityRainAvg :: Place -> Float
-getCityRainAvg (Place n c rainf) = sum rainf / fromIntegral (length rainf)
+getCityRainAvg (Place n c rain) = sum rain / fromIntegral (length rain)
 
 displayCityRainAvg :: String -> [Place] -> String
-displayCityRainAvg n c = printf "%.2f" (getCityRainAvg (getCityByName n c))
+displayCityRainAvg n p = printf "%.2f" (getCityRainAvg (getPlace n p))
 
 format2dp :: Float -> String
 format2dp x = printf "%8.2f" x
@@ -73,14 +71,7 @@ removePlace:: String -> [Place] -> [Place]
 removePlace s = filter(\(Place n c r) -> n /= s)
 
 addPlace :: Place -> [Place] -> [Place]
-addPlace place list = place:list
-
-updatePlace :: Place -> Place -> Place
-updatePlace (Place n1 c1 r1) (Place n2 c2 r2) = Place n2 c2 r2
-
-replacePlace :: String -> Place -> [Place] -> [Place]
-replacePlace og new list
-  = [if og == n then (updatePlace(getPlace og list) new) else (Place n c r) | (Place n c r) <- list]
+addPlace place list = list ++ [place]
 
 --
 --  Demo
@@ -102,17 +93,22 @@ demo 3 = putStrLn (placesToString testData)
 
 -- display the names of all places that were dry two days ago
 demo 4 = do
-  let dryCities = dryPlacesInXDays 2 testData
-  putStrLn dryCities
+  let dryPlaces = dryPlacesInXDays 2 testData
+  putStrLn dryPlaces
 
--- update the data with most recent rainfall (and remove oldest rainfall figures)
+-- update the data with most recent rainfall (and remove oldest figures)
 demo 5 = do
   let updatedPlaces = updateAllPlaces [0,8,0,0,5,0,0,3,4,2,0,8,0,0] testData
   putStrLn (placesToString updatedPlaces)
 
+-- replace "Plymouth" with "Portsmouth" which has
+-- location 50.8 (N), -1.1 (E) and rainfall 0, 0, 3, 2, 5, 2, 1
 demo 6 = do
-  let alteredPlaces = replacePlace "Plymouth" (Place "Portsmouth" (50.8,(-1.1)) [0,0,3,2,5,2,1]) testData
-  putStrLn (placesToString alteredPlaces)
+  let filteredPlaces = removePlace "Plymouth" testData
+  let portsmouth = Place "Portsmouth" (50.8,(-1.1)) [0,0,3,2,5,2,1]
+  let addPortsmouth = addPlace portsmouth filteredPlaces
+  putStrLn (placesToString addPortsmouth)
+
 -- demo 7 = -- display the name of the place closest to 50.9 (N), -1.3 (E)
 --          -- that was dry yesterday
 -- demo 8 = -- display the rainfall map
