@@ -12,6 +12,10 @@ import Text.Printf
 type Coords = (Float, Float)
 data Place = Place String Coords [Float] deriving (Eq,Ord,Show,Read)
 
+data Tree = Null |
+     Node (Place, Float) Tree Tree
+     deriving (Eq,Show)
+
 testData :: [Place]
 testData = [
   Place "London"     (51.5, (-0.1)) [0, 0, 5, 8, 8, 0, 0 ],
@@ -58,8 +62,8 @@ placesToString = unlines . map (showRainfallList)
 dryInXDays :: Place -> Int -> Bool
 dryInXDays (Place n c rain) x = rain!!(x-1) == 0
 
-dryPlacesInXDays :: Int -> [Place] -> String
-dryPlacesInXDays x = displayCityNames . filter (\p -> (dryInXDays p x))
+dryPlacesInXDays :: Int -> [Place] -> [Place]
+dryPlacesInXDays x = filter (\p -> (dryInXDays p x))
 
 updatePlaceRain :: Float -> Place -> Place
 updatePlaceRain x (Place n c rain) = Place n c (init (x:rain))
@@ -72,6 +76,37 @@ removePlace s = filter(\(Place n c r) -> n /= s)
 
 addPlace :: Place -> [Place] -> [Place]
 addPlace place list = list ++ [place]
+
+getDistance :: Coords -> Coords -> Float
+getDistance (x1, y1) (x2, y2) = sqrt( (x2-x1)^2 + (y2-y1)^2 )
+
+assignDistance :: Coords -> Place -> (Place, Float)
+assignDistance c1 (Place n c2 r) = (Place n c2 r, getDistance c1 c2)
+
+insert :: (Place, Float) -> Tree -> Tree
+insert p Null = Node p Null Null
+insert (x,y) (Node (i,j) st1 st2)
+  | y < j && st1 /= Null = (Node (i,j) (insert (x,y) st1) st2)
+  | y < j && st1 == Null = (Node (i,j) (Node (x,y) Null Null) st2)
+  | y > j && st2 /= Null = (Node (i,j) st1 (insert (x,y) st2))
+  | y > j && st2 == Null = (Node (i,j) st1 (Node (x,y) Null Null))
+  | otherwise = (Node (x,y) st1 st2)
+
+inOrder :: Tree -> [Place]
+inOrder (Node (x,y) st1 st2)
+  | st1 /= Null && st2 /= Null = inOrder st1 ++ [x] ++ inOrder st2
+  | st1 /= Null = inOrder st1 ++ [x]
+  | st2 /= Null = [x] ++ inOrder st2
+  | otherwise = [x]
+
+listToSearchTree :: [(Place, Float)] -> Tree
+listToSearchTree = foldr (insert) Null
+
+binaryTreeSort :: [(Place, Float)] -> [Place]
+binaryTreeSort = inOrder . listToSearchTree
+
+findClosest :: Coords -> [Place] -> Place
+findClosest c1 = head . binaryTreeSort . map(assignDistance c1)
 
 --
 --  Demo
@@ -94,7 +129,8 @@ demo 3 = putStrLn (placesToString testData)
 -- display the names of all places that were dry two days ago
 demo 4 = do
   let dryPlaces = dryPlacesInXDays 2 testData
-  putStrLn dryPlaces
+  let result = displayCityNames dryPlaces
+  putStrLn result
 
 -- update the data with most recent rainfall (and remove oldest figures)
 demo 5 = do
@@ -109,8 +145,13 @@ demo 6 = do
   let addPortsmouth = addPlace portsmouth filteredPlaces
   putStrLn (placesToString addPortsmouth)
 
--- demo 7 = -- display the name of the place closest to 50.9 (N), -1.3 (E)
---          -- that was dry yesterday
+-- display the name of the place closest to 50.9 (N), -1.3 (E) that was
+-- dry yesterday
+demo 7 = do
+  let closest = findClosest (50.9, (-1.2)) (dryPlacesInXDays 1 testData)
+  putStrLn (placesToString [closest])
+
+
 -- demo 8 = -- display the rainfall map
 
 
