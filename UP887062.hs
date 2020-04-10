@@ -47,7 +47,7 @@ getCityRainAvg :: Place -> Float
 getCityRainAvg (Place n c rain) = sum rain / fromIntegral (length rain)
 
 displayCityRainAvg :: String -> [Place] -> String
-displayCityRainAvg n p = printf "%.2f" (getCityRainAvg (getPlace n p))
+displayCityRainAvg n p = printf "+ %s avg: %.2f" n (getCityRainAvg (getPlace n p))
 
 format2dp :: Float -> String
 format2dp x = printf "%8.2f" x
@@ -107,6 +107,12 @@ binaryTreeSort = inOrder . listToSearchTree
 findClosest :: Coords -> [Place] -> Place
 findClosest c1 = head . binaryTreeSort . map(assignDistance c1)
 
+convertYCoord :: Float -> Int
+convertYCoord n = round (50 - ((n - 48.2) * (50 / 12)))
+
+convertXCoord :: Float -> Int
+convertXCoord n = round ((n + 7.4) * (80 / 8))
+
 --
 --  Demo
 --
@@ -151,7 +157,9 @@ demo 7 = do
   putStrLn (placesToString [closest])
 
 
--- demo 8 = -- display the rainfall map
+demo 8 = do
+  clearScreen
+  displayMap testData
 
 
 --
@@ -181,6 +189,16 @@ writeAt position text = do
 --
 -- Your rainfall map code goes here
 --
+--
+-- displayPlace :: Place -> IO()
+-- displayPlace (Place n (x,y) r) = writeAt(round x)
+
+displayMap :: [Place] -> IO()
+displayMap [] = goTo(0, 50)
+displayMap ((Place n (y, x) r):xs) = do
+  let output = displayCityRainAvg n [(Place n (x, y) r)]
+  writeAt (convertXCoord x, convertYCoord y) output
+  displayMap xs
 
 
 
