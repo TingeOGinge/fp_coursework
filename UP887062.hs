@@ -4,12 +4,13 @@
 --
 
 import Text.Printf
+import Data.List
 
 --
 -- Types (define Place type here)
 --
 type Coords = (Float, Float)
-data Place = Place String Coords [Float] deriving (Eq,Ord,Show,Read)
+data Place = Place String Coords [Int] deriving (Eq,Ord,Show,Read)
 
 data Tree = Null |
      Node (Place, Float) Tree Tree
@@ -44,16 +45,16 @@ getPlace :: String -> [Place] -> Place
 getPlace n = head . filter(\(Place name c r) -> n == name)
 
 getCityRainAvg :: Place -> Float
-getCityRainAvg (Place n c rain) = sum rain / fromIntegral (length rain)
+getCityRainAvg (Place n c rain) = realToFrac (sum rain) / genericLength rain
 
 displayCityRainAvg :: String -> [Place] -> String
 displayCityRainAvg n p = printf "+ %s avg: %.2f" n (getCityRainAvg (getPlace n p))
 
-format2dp :: Float -> String
-format2dp x = printf "%8.2f" x
+formatCol :: Int -> String
+formatCol x = printf "%5d" x
 
 showRainfallList :: Place -> String
-showRainfallList (Place n c r) = printf "%-10s %s" n (unwords (map format2dp r))
+showRainfallList (Place n c r) = printf "%-12s %s" n (unwords (map formatCol r))
 
 placesToString :: [Place] -> String
 placesToString = unlines . map (showRainfallList)
@@ -64,10 +65,10 @@ dryInXDays (Place n c rain) x = rain!!(x-1) == 0
 dryPlacesInXDays :: Int -> [Place] -> [Place]
 dryPlacesInXDays x = filter (\p -> (dryInXDays p x))
 
-updatePlaceRain :: Float -> Place -> Place
+updatePlaceRain :: Int -> Place -> Place
 updatePlaceRain x (Place n c rain) = Place n c (init (x:rain))
 
-updateAllPlaces :: [Float] -> [Place] -> [Place]
+updateAllPlaces :: [Int] -> [Place] -> [Place]
 updateAllPlaces = zipWith (updatePlaceRain)
 
 removePlace:: String -> [Place] -> [Place]
@@ -82,12 +83,12 @@ getDistance (x1, y1) (x2, y2) = sqrt( (x2-x1)^2 + (y2-y1)^2 )
 assignDistance :: Coords -> Place -> (Place, Float)
 assignDistance c1 (Place n c2 r) = (Place n c2 r, getDistance c1 c2)
 
-insert :: (Place, Float) -> Tree -> Tree
-insert p Null = Node p Null Null
-insert (x,y) (Node (i,j) st1 st2)
-  | y < j && st1 /= Null = (Node (i,j) (insert (x,y) st1) st2)
+tInsert :: (Place, Float) -> Tree -> Tree
+tInsert p Null = Node p Null Null
+tInsert (x,y) (Node (i,j) st1 st2)
+  | y < j && st1 /= Null = (Node (i,j) (tInsert (x,y) st1) st2)
   | y < j && st1 == Null = (Node (i,j) (Node (x,y) Null Null) st2)
-  | y > j && st2 /= Null = (Node (i,j) st1 (insert (x,y) st2))
+  | y > j && st2 /= Null = (Node (i,j) st1 (tInsert (x,y) st2))
   | y > j && st2 == Null = (Node (i,j) st1 (Node (x,y) Null Null))
   | otherwise = (Node (x,y) st1 st2)
 
@@ -99,7 +100,7 @@ inOrder (Node (x,y) st1 st2)
   | otherwise = [x]
 
 listToSearchTree :: [(Place, Float)] -> Tree
-listToSearchTree = foldr (insert) Null
+listToSearchTree = foldr (tInsert) Null
 
 binaryTreeSort :: [(Place, Float)] -> [Place]
 binaryTreeSort = inOrder . listToSearchTree
