@@ -12,10 +12,6 @@ import Data.List
 type Coords = (Float, Float)
 data Place = Place String Coords [Int] deriving (Eq,Ord,Show,Read)
 
-data Tree = Null |
-     Node (Place, Float) Tree Tree
-     deriving (Eq,Show)
-
 testData :: [Place]
 testData = [
   Place "London"     (51.5, (-0.1)) [0, 0, 5, 8, 8, 0, 0 ],
@@ -44,11 +40,11 @@ displayCityNames = unlines . map(\(Place name c r) -> name)
 getPlace :: String -> [Place] -> Place
 getPlace n = head . filter(\(Place name c r) -> n == name)
 
-getCityRainAvg :: Place -> Float
-getCityRainAvg (Place n c rain) = realToFrac (sum rain) / genericLength rain
+getAvg :: Place -> Float
+getAvg (Place n c rain) = realToFrac (sum rain) / genericLength rain
 
-displayCityRainAvg :: String -> [Place] -> String
-displayCityRainAvg n p = printf "+ %s avg: %.2f" n (getCityRainAvg (getPlace n p))
+placeAvgToString :: String -> [Place] -> String
+placeAvgToString n p = printf "+ %s avg: %.2f" n (getAvg (getPlace n p))
 
 formatCol :: Int -> String
 formatCol x = printf "%5d" x
@@ -80,33 +76,17 @@ addPlace place list = list ++ [place]
 getDistance :: Coords -> Coords -> Float
 getDistance (x1, y1) (x2, y2) = sqrt( (x2-x1)^2 + (y2-y1)^2 )
 
-assignDistance :: Coords -> Place -> (Place, Float)
-assignDistance c1 (Place n c2 r) = (Place n c2 r, getDistance c1 c2)
+assignDist :: Coords -> Place -> (Place, Float)
+assignDist c1 (Place n c2 r) = (Place n c2 r, getDistance c1 c2)
 
-tInsert :: (Place, Float) -> Tree -> Tree
-tInsert p Null = Node p Null Null
-tInsert (x,y) (Node (i,j) st1 st2)
-  | y < j && st1 /= Null = (Node (i,j) (tInsert (x,y) st1) st2)
-  | y < j && st1 == Null = (Node (i,j) (Node (x,y) Null Null) st2)
-  | y > j && st2 /= Null = (Node (i,j) st1 (tInsert (x,y) st2))
-  | y > j && st2 == Null = (Node (i,j) st1 (Node (x,y) Null Null))
-  | otherwise = (Node (x,y) st1 st2)
+compareDist :: (Place, Float) -> (Place, Float) -> Ordering
+compareDist (_,a) (_,b) = compare a b
 
-inOrder :: Tree -> [Place]
-inOrder (Node (x,y) st1 st2)
-  | st1 /= Null && st2 /= Null = inOrder st1 ++ [x] ++ inOrder st2
-  | st1 /= Null = inOrder st1 ++ [x]
-  | st2 /= Null = [x] ++ inOrder st2
-  | otherwise = [x]
+stripDist :: (Place, Float) -> Place
+stripDist (x,_) = x
 
-listToSearchTree :: [(Place, Float)] -> Tree
-listToSearchTree = foldr (tInsert) Null
-
-binaryTreeSort :: [(Place, Float)] -> [Place]
-binaryTreeSort = inOrder . listToSearchTree
-
-findClosest :: Coords -> [Place] -> Place
-findClosest c1 = head . binaryTreeSort . map(assignDistance c1)
+getClosest :: Coords -> [Place] -> Place
+getClosest c1 = stripDist . head . sortBy(compareDist) . map(assignDist c1)
 
 convertYCoord :: Float -> Int
 convertYCoord n = round (50 - ((n - 48.2) * (50 / 12)))
@@ -120,23 +100,16 @@ convertXCoord n = round ((n + 7.4) * (80 / 8))
 --
 demo :: Int -> IO ()
 -- display the names of all the places
-demo 1 = do
-  let cities = displayCityNames testData
-  putStrLn (cities)
+demo 1 = putStr (displayCityNames testData)
 
 -- display, to two decimal places, the average rainfall in Cardiff
-demo 2 = do
-  let result = displayCityRainAvg "Cardiff" testData
-  putStrLn result
+demo 2 = putStrLn (placeAvgToString "Cardiff" testData)
 
 -- display all place names and their 7-day rainfall figures as a single string
 demo 3 = putStrLn (placesToString testData)
 
 -- display the names of all places that were dry two days ago
-demo 4 = do
-  let dryPlaces = dryPlacesInXDays 2 testData
-  let result = displayCityNames dryPlaces
-  putStrLn result
+demo 4 = putStr(displayCityNames (dryPlacesInXDays 2 testData))
 
 -- update the data with most recent rainfall (and remove oldest figures)
 demo 5 = do
@@ -154,8 +127,8 @@ demo 6 = do
 -- display the name of the place closest to 50.9 (N), -1.3 (E) that was
 -- dry yesterday
 demo 7 = do
-  let closest = findClosest (50.9, (-1.2)) (dryPlacesInXDays 1 testData)
-  putStrLn (placesToString [closest])
+  let closestPlace = getClosest (50.9, (-1.2)) (dryPlacesInXDays 1 testData)
+  putStrLn (placesToString [closestPlace])
 
 
 demo 8 = do
@@ -190,14 +163,11 @@ writeAt position text = do
 --
 -- Your rainfall map code goes here
 --
---
--- displayPlace :: Place -> IO()
--- displayPlace (Place n (x,y) r) = writeAt(round x)
 
 displayMap :: [Place] -> IO()
 displayMap [] = goTo(0, 50)
 displayMap ((Place n (y, x) r):xs) = do
-  let output = displayCityRainAvg n [(Place n (x, y) r)]
+  let output = placeAvgToString n [(Place n (x, y) r)]
   writeAt (convertXCoord x, convertYCoord y) output
   displayMap xs
 
