@@ -42,16 +42,19 @@ getPlace :: String -> [Place] -> Place
 getPlace n = head . filter(\(Place name c r) -> n == name)
 
 getAvg :: Place -> Float
-getAvg (Place n c rain) = realToFrac (sum rain) / genericLength rain
+getAvg (Place n c r) = realToFrac (sum r) / genericLength r
 
-placeAvgToString :: String -> [Place] -> String
-placeAvgToString n p = printf "+ %s avg: %.2f" n (getAvg (getPlace n p))
+placeAvgToStr :: String -> [Place] -> String
+placeAvgToStr n p = printf "+ %s avg: %.2f" n (getAvg (getPlace n p))
 
 formatCol :: Int -> String
 formatCol x = printf "%5d" x
 
+formatRain :: [Int] -> String
+formatRain = unwords . map formatCol
+
 showRainfallList :: Place -> String
-showRainfallList (Place n c r) = printf "%-12s %s" n (unwords (map formatCol r))
+showRainfallList (Place n c r) = printf "%-12s %s" n (formatRain r)
 
 placesToString :: [Place] -> String
 placesToString = unlines . map (showRainfallList)
@@ -116,7 +119,7 @@ demo :: Int -> IO ()
 demo 1 = putStr (placeNames testData)
 
 -- display, to two decimal places, the average rainfall in Cardiff
-demo 2 = putStrLn (placeAvgToString "Cardiff" testData)
+demo 2 = putStrLn (placeAvgToStr "Cardiff" testData)
 
 -- display all place names and their 7-day rainfall figures as a single string
 demo 3 = putStr (placesToString testData)
@@ -178,7 +181,7 @@ writeAt position text = do
 displayMap :: [Place] -> IO()
 displayMap [] = goTo(0, 50)
 displayMap ((Place n (y, x) r):xs) = do
-  let output = placeAvgToString n [(Place n (y, x) r)]
+  let output = placeAvgToStr n [(Place n (y, x) r)]
   writeAt (convertXCoord x, convertYCoord y) output
   displayMap xs
 
@@ -239,7 +242,7 @@ option "2" list = do
   putStr "Enter the name of your place: "
   place <- getLine
   if (placeExists place list) then do
-    putStrLn (placeAvgToString place list)
+    putStrLn (placeAvgToStr place list)
     return list
     else do
       putStrLn (printf "%s was not found, please try again" place)
