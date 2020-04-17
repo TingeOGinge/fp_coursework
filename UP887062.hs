@@ -35,8 +35,8 @@ testData = [
 --  Your functional code goes here
 --
 
-displayCityNames :: [Place] -> String
-displayCityNames = unlines . map(\(Place name c r) -> name)
+placeNames :: [Place] -> String
+placeNames = unlines . map(\(Place name c r) -> name)
 
 getPlace :: String -> [Place] -> Place
 getPlace n = head . filter(\(Place name c r) -> n == name)
@@ -113,7 +113,7 @@ validFloat s = Nothing /= (readMaybe s :: Maybe Float)
 --
 demo :: Int -> IO ()
 -- display the names of all the places
-demo 1 = putStr (displayCityNames testData)
+demo 1 = putStr (placeNames testData)
 
 -- display, to two decimal places, the average rainfall in Cardiff
 demo 2 = putStrLn (placeAvgToString "Cardiff" testData)
@@ -122,7 +122,7 @@ demo 2 = putStrLn (placeAvgToString "Cardiff" testData)
 demo 3 = putStr (placesToString testData)
 
 -- display the names of all places that were dry two days ago
-demo 4 = putStr(displayCityNames (dryPlacesInXDays 2 testData))
+demo 4 = putStr(placeNames (dryPlacesInXDays 2 testData))
 
 -- update the data with most recent rainfall (and remove oldest figures)
 demo 5 = do
@@ -232,7 +232,7 @@ createPlace = do
 
 option :: String -> [Place] -> IO [Place]
 option "1" list = do
-  putStr (displayCityNames list)
+  putStr (placeNames list)
   return list
 
 option "2" list = do
@@ -257,7 +257,7 @@ option "4" list = do
     option "4" list
     else do
       let x = (read days :: Int)
-      putStr(displayCityNames (dryPlacesInXDays x list))
+      putStr(placeNames (dryPlacesInXDays x list))
       return list
 
 option "5" list = do
@@ -327,6 +327,6 @@ main = do
   raw <- readFile "places.txt"
   let list = (read raw :: [Place])
   clearScreen
-  putStr (displayCityNames list)
+  putStr (placeNames list)
   newList <- menu list
   writeFile "places.txt" (show newList)
