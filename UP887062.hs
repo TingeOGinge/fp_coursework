@@ -1,17 +1,28 @@
 --
 -- MATHFUN
 -- UP887062
+-- All demos are complete and functioning
+-- A fully functioning UI has also been implemented and can be run with the
+-- main program
 --
 
+-- Used to format the String outputs
 import Text.Printf
+
+-- Used as part of the UI to validate inputs (confirmed with Matthew Poole
+-- that this is okay)
 import Text.Read
+
+-- Imported for general list manipulation
 import Data.List
 
 --
 -- Types (define Place type here)
 --
+type Name = String
 type Coords = (Float, Float)
-data Place = Place String Coords [Int] deriving (Eq,Ord,Show,Read)
+type Rainfall = [Int]
+data Place = Place Name Coords Rainfall deriving (Show,Read)
 
 testData :: [Place]
 testData = [
@@ -35,22 +46,30 @@ testData = [
 --  Your functional code goes here
 --
 
-placeNames :: [Place] -> String
+-- Used to display the names of all currently recorded places
+placeNames :: [Place] -> Name
 placeNames = unlines . map(\(Place name c r) -> name)
 
-getPlace :: String -> [Place] -> Place
+-- Retrieve a place by its name
+-- UI prevents duplicate names and the hardcoded data can be verified
+-- Consequently no duplicates are expected in this function
+getPlace :: Name -> [Place] -> Place
 getPlace n = head . filter(\(Place name c r) -> n == name)
 
+-- Retrieve the average rainfall of a given place
 getAvg :: Place -> Float
 getAvg (Place n c r) = realToFrac (sum r) / genericLength r
 
-placeAvgToStr :: String -> [Place] -> String
+-- Converts place into a string containing the place name and rainfall average
+placeAvgToStr :: Name -> [Place] -> String
 placeAvgToStr n p = printf "+ %s avg: %.2f" n (getAvg (getPlace n p))
 
+-- The following four functions are used to format the data for output in
+-- demo 3 etc
 formatCol :: Int -> String
 formatCol x = printf "%5d" x
 
-formatRain :: [Int] -> String
+formatRain :: Rainfall -> String
 formatRain = unwords . map formatCol
 
 showRainfallList :: Place -> String
@@ -59,24 +78,38 @@ showRainfallList (Place n c r) = printf "%-12s %s" n (formatRain r)
 placesToString :: [Place] -> String
 placesToString = unlines . map (showRainfallList)
 
+-- The two functions below are used to retrieve locations that were dry a given
+-- amount of days ago
 dryInXDays :: Place -> Int -> Bool
 dryInXDays (Place n c rain) x = rain!!(x-1) == 0
 
 dryPlacesInXDays :: Int -> [Place] -> [Place]
 dryPlacesInXDays x = filter (\p -> (dryInXDays p x))
 
+-- The following two functions are used to update the latest rainfall figures
+-- of all places in the given list
 updatePlaceRain :: Int -> Place -> Place
 updatePlaceRain x (Place n c rain) = Place n c (init (x:rain))
 
 updateAllPlaces :: [Int] -> [Place] -> [Place]
 updateAllPlaces = zipWith (updatePlaceRain)
 
-removePlace:: String -> [Place] -> [Place]
+-- The following two functions are used to complete demo 6
+-- I opted for two separate functions rather than a single function that
+-- replaces a location in place using list comprehension
+-- The separate functions offer a functional approach and could be applied in
+-- future scenarios without adaptation
+removePlace:: Name -> [Place] -> [Place]
 removePlace s = filter(\(Place n c r) -> n /= s)
 
 addPlace :: Place -> [Place] -> [Place]
 addPlace place list = list ++ [place]
 
+-- The following 5 functions are used to locate the nearest place to given Coords
+-- First we calculate and assign the distance of each place to the target
+-- Then we sort the new list by these distances
+-- Next we take the first (closest) element and return the place without the
+-- distance value
 getDistance :: Coords -> Coords -> Float
 getDistance (x1, y1) (x2, y2) = sqrt( (x2-x1)^2 + (y2-y1)^2 )
 
@@ -92,18 +125,37 @@ stripDist (x,_) = x
 getClosest :: Coords -> [Place] -> Place
 getClosest c1 = stripDist . head . sortBy(compareDist) . map(assignDist c1)
 
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- The following functional code is used to support the user interface, not the
+-- demos. I opted to keep it here to ensure complete separation of functional
+-- and IO code
+
+-- To convert the coordinates I used the following basic formula
+-- 1: Adjust all values 'n' so the lowest value becomes 1
+-- 2: Calculate the difference between the highest and lowest values and
+-- divided the screen size by this value to get the 'conversion factor'
+-- 3: Multiply the new 'n' value by the 'conversion factor'
+-- 3b (Y Coords only): For the Y coordinates I then flipped the values by the
+-- screen height
+-- 4: use the round function to return an Integer
 convertYCoord :: Float -> Int
 convertYCoord n = round (50 - ((n - 48.2) * (50 / 12)))
 
 convertXCoord :: Float -> Int
 convertXCoord n = round ((n + 7.4) * (80 / 8))
 
-isPlace :: String -> Place -> Bool
+-- The two functions are used to validate the UI input of place names
+isPlace :: Name -> Place -> Bool
 isPlace s (Place n c r) = s == n
 
-placeExists :: String -> [Place] -> Bool
+placeExists :: Name -> [Place] -> Bool
 placeExists s = foldr (||) False . map(isPlace s)
 
+-- The next two functions are used to validate numerical input for coordinates
+-- or rainfall figures
 validInt :: String -> Bool
 validInt s = Nothing /= (readMaybe s :: Maybe Int)
 
