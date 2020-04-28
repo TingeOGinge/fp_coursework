@@ -270,20 +270,24 @@ getRainfall 0 rainfall = return rainfall
 getRainfall n rainfall = do
   putStr "Input rainfall data: "
   r <- getLine
-  if (validInt r) then do
+  if (validInt r && not("-" `isInfixOf` r)) then do
     let newRainfall = rainfall ++ [(read r :: Int)]
     getRainfall (n-1) newRainfall
     else do
       putStrLn "Invalid input"
       getRainfall n rainfall
 
-createPlace :: IO Place
-createPlace = do
+createPlace :: [Place] -> IO Place
+createPlace list = do
   putStr "Enter the name of the new place: "
   name <- getLine
-  coords <- getCoords
-  rainfall <- getRainfall 7 []
-  return (Place name coords rainfall)
+  if (placeExists name list) then do
+    putStrLn (printf "%s already exists" name)
+    createPlace list
+    else do
+      coords <- getCoords
+      rainfall <- getRainfall 7 []
+      return (Place name coords rainfall)
 
 option :: String -> [Place] -> IO [Place]
 option "1" list = do
@@ -307,7 +311,7 @@ option "3" list = do
 option "4" list = do
   putStrLn "How many days ago?"
   days <- getLine
-  if (not (validInt days) || days < "1" || days > "7") then do
+  if (not (validInt days) || not (days `elem` ["1","2","3","4","5","6","7"])) then do
     putStrLn "Invalid input"
     option "4" list
     else do
@@ -326,7 +330,7 @@ option "6" list = do
   place <- getLine
   if (placeExists place list) then do
     let filteredList = removePlace place list
-    newPlace <- createPlace
+    newPlace <- createPlace list
     let newList = addPlace newPlace filteredList
     putStrLn (placesToString newList)
     return newList
