@@ -277,6 +277,16 @@ getRainfall n rainfall = do
       putStrLn "Invalid input"
       getRainfall n rainfall
 
+getRainfallDay :: IO Int
+getRainfallDay = do
+  putStrLn "How many days ago?"
+  x <- getLine
+  if (validInt x && x `elem` ["1","2","3","4","5","6","7"]) then
+    return (read x :: Int)
+    else do
+      putStrLn "Invalid input"
+      getRainfallDay
+
 createPlace :: [Place] -> IO Place
 createPlace list = do
   putStr "Enter the name of the new place: "
@@ -309,15 +319,9 @@ option "3" list = do
   return list
 
 option "4" list = do
-  putStrLn "How many days ago?"
-  days <- getLine
-  if (not (validInt days) || not (days `elem` ["1","2","3","4","5","6","7"])) then do
-    putStrLn "Invalid input"
-    option "4" list
-    else do
-      let x = (read days :: Int)
-      putStr(placeNames (dryPlacesInXDays x list))
-      return list
+  days <- getRainfallDay
+  putStr(placeNames (dryPlacesInXDays days list))
+  return list
 
 option "5" list = do
   rainfallFigs <- getRainfallUpdates list []
@@ -339,8 +343,9 @@ option "6" list = do
       option "6" list
 
 option "7" list = do
-  let dryList = dryPlacesInXDays 1 list
   coords <- getCoords
+  day <- getRainfallDay
+  let dryList = dryPlacesInXDays day list
   let closestPlace = getClosest coords dryList
   putStrLn (placesToString [closestPlace])
   return list
