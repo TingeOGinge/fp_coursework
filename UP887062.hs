@@ -1,17 +1,28 @@
 --
 -- MATHFUN
 -- UP887062
+-- All demos are complete and functioning
+-- A fully functioning UI has also been implemented and can be run with the
+-- main program
 --
 
+-- Used to format the String outputs
 import Text.Printf
+
+-- Used as part of the UI to validate inputs (confirmed with Matthew Poole
+-- that this is okay)
 import Text.Read
+
+-- Imported for general list manipulation
 import Data.List
 
 --
 -- Types (define Place type here)
 --
+type Name = String
 type Coords = (Float, Float)
-data Place = Place String Coords [Int] deriving (Eq,Ord,Show,Read)
+type Rainfall = [Int]
+data Place = Place Name Coords Rainfall deriving (Show,Read)
 
 testData :: [Place]
 testData = [
@@ -35,45 +46,70 @@ testData = [
 --  Your functional code goes here
 --
 
-displayCityNames :: [Place] -> String
-displayCityNames = unlines . map(\(Place name c r) -> name)
+-- Used to display the names of all currently recorded places
+placeNames :: [Place] -> Name
+placeNames = unlines . map(\(Place name c r) -> name)
 
-getPlace :: String -> [Place] -> Place
+-- Retrieve a place by its name
+-- UI prevents duplicate names and the hardcoded data can be verified
+-- Consequently no duplicates are expected in this function
+getPlace :: Name -> [Place] -> Place
 getPlace n = head . filter(\(Place name c r) -> n == name)
 
+-- Retrieve the average rainfall of a given place
 getAvg :: Place -> Float
-getAvg (Place n c rain) = realToFrac (sum rain) / genericLength rain
+getAvg (Place n c r) = realToFrac (sum r) / genericLength r
 
-placeAvgToString :: String -> [Place] -> String
-placeAvgToString n p = printf "+ %s avg: %.2f" n (getAvg (getPlace n p))
+-- Converts place into a string containing the place name and rainfall average
+placeAvgToStr :: Name -> [Place] -> String
+placeAvgToStr n p = printf "+ %s avg: %.2f" n (getAvg (getPlace n p))
 
+-- The following four functions are used to format the data for output in
+-- demo 3 etc
 formatCol :: Int -> String
 formatCol x = printf "%5d" x
 
+formatRain :: Rainfall -> String
+formatRain = unwords . map formatCol
+
 showRainfallList :: Place -> String
-showRainfallList (Place n c r) = printf "%-12s %s" n (unwords (map formatCol r))
+showRainfallList (Place n c r) = printf "%-12s %s" n (formatRain r)
 
 placesToString :: [Place] -> String
 placesToString = unlines . map (showRainfallList)
 
+-- The two functions below are used to retrieve locations that were dry a given
+-- amount of days ago
 dryInXDays :: Place -> Int -> Bool
 dryInXDays (Place n c rain) x = rain!!(x-1) == 0
 
 dryPlacesInXDays :: Int -> [Place] -> [Place]
 dryPlacesInXDays x = filter (\p -> (dryInXDays p x))
 
+-- The following two functions are used to update the latest rainfall figures
+-- of all places in the given list
 updatePlaceRain :: Int -> Place -> Place
 updatePlaceRain x (Place n c rain) = Place n c (init (x:rain))
 
 updateAllPlaces :: [Int] -> [Place] -> [Place]
 updateAllPlaces = zipWith (updatePlaceRain)
 
-removePlace:: String -> [Place] -> [Place]
+-- The following two functions are used to complete demo 6
+-- I opted for two separate functions rather than a single function that
+-- replaces a location in place using list comprehension
+-- The separate functions offer a functional approach and could be applied in
+-- future scenarios without adaptation
+removePlace:: Name -> [Place] -> [Place]
 removePlace s = filter(\(Place n c r) -> n /= s)
 
 addPlace :: Place -> [Place] -> [Place]
 addPlace place list = list ++ [place]
 
+-- The following 5 functions are used to locate the nearest place to given Coords
+-- First we calculate and assign the distance of each place to the target
+-- Then we sort the new list by these distances
+-- Next we take the first (closest) element and return the place without the
+-- distance value
 getDistance :: Coords -> Coords -> Float
 getDistance (x1, y1) (x2, y2) = sqrt( (x2-x1)^2 + (y2-y1)^2 )
 
@@ -89,18 +125,37 @@ stripDist (x,_) = x
 getClosest :: Coords -> [Place] -> Place
 getClosest c1 = stripDist . head . sortBy(compareDist) . map(assignDist c1)
 
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- The following functional code is used to support the user interface, not the
+-- demos. I opted to keep it here to ensure complete separation of functional
+-- and IO code
+
+-- To convert the coordinates I used the following basic formula
+-- 1: Adjust all values 'n' so the lowest value becomes 1
+-- 2: Calculate the difference between the highest and lowest values and
+-- divided the screen size by this value to get the 'conversion factor'
+-- 3: Multiply the new 'n' value by the 'conversion factor'
+-- 3b (Y Coords only): For the Y coordinates I then flipped the values by the
+-- screen height
+-- 4: use the round function to return an Integer
 convertYCoord :: Float -> Int
 convertYCoord n = round (50 - ((n - 48.2) * (50 / 12)))
 
 convertXCoord :: Float -> Int
 convertXCoord n = round ((n + 7.4) * (80 / 8))
 
-isPlace :: String -> Place -> Bool
+-- The two functions are used to validate the UI input of place names
+isPlace :: Name -> Place -> Bool
 isPlace s (Place n c r) = s == n
 
-placeExists :: String -> [Place] -> Bool
+placeExists :: Name -> [Place] -> Bool
 placeExists s = foldr (||) False . map(isPlace s)
 
+-- The next two functions are used to validate numerical input for coordinates
+-- or rainfall figures
 validInt :: String -> Bool
 validInt s = Nothing /= (readMaybe s :: Maybe Int)
 
@@ -113,16 +168,16 @@ validFloat s = Nothing /= (readMaybe s :: Maybe Float)
 --
 demo :: Int -> IO ()
 -- display the names of all the places
-demo 1 = putStr (displayCityNames testData)
+demo 1 = putStr (placeNames testData)
 
 -- display, to two decimal places, the average rainfall in Cardiff
-demo 2 = putStrLn (placeAvgToString "Cardiff" testData)
+demo 2 = putStrLn (placeAvgToStr "Cardiff" testData)
 
 -- display all place names and their 7-day rainfall figures as a single string
 demo 3 = putStr (placesToString testData)
 
 -- display the names of all places that were dry two days ago
-demo 4 = putStr(displayCityNames (dryPlacesInXDays 2 testData))
+demo 4 = putStr(placeNames (dryPlacesInXDays 2 testData))
 
 -- update the data with most recent rainfall (and remove oldest figures)
 demo 5 = do
@@ -178,7 +233,7 @@ writeAt position text = do
 displayMap :: [Place] -> IO()
 displayMap [] = goTo(0, 50)
 displayMap ((Place n (y, x) r):xs) = do
-  let output = placeAvgToString n [(Place n (y, x) r)]
+  let output = placeAvgToStr n [(Place n (y, x) r)]
   writeAt (convertXCoord x, convertYCoord y) output
   displayMap xs
 
@@ -215,31 +270,45 @@ getRainfall 0 rainfall = return rainfall
 getRainfall n rainfall = do
   putStr "Input rainfall data: "
   r <- getLine
-  if (validInt r) then do
+  if (validInt r && not("-" `isInfixOf` r)) then do
     let newRainfall = rainfall ++ [(read r :: Int)]
     getRainfall (n-1) newRainfall
     else do
       putStrLn "Invalid input"
       getRainfall n rainfall
 
-createPlace :: IO Place
-createPlace = do
+getRainfallDay :: IO Int
+getRainfallDay = do
+  putStrLn "How many days ago?"
+  x <- getLine
+  if (validInt x && x `elem` ["1","2","3","4","5","6","7"]) then
+    return (read x :: Int)
+    else do
+      putStrLn "Invalid input"
+      getRainfallDay
+
+createPlace :: [Place] -> IO Place
+createPlace list = do
   putStr "Enter the name of the new place: "
   name <- getLine
-  coords <- getCoords
-  rainfall <- getRainfall 7 []
-  return (Place name coords rainfall)
+  if (placeExists name list) then do
+    putStrLn (printf "%s already exists" name)
+    createPlace list
+    else do
+      coords <- getCoords
+      rainfall <- getRainfall 7 []
+      return (Place name coords rainfall)
 
 option :: String -> [Place] -> IO [Place]
 option "1" list = do
-  putStr (displayCityNames list)
+  putStr (placeNames list)
   return list
 
 option "2" list = do
   putStr "Enter the name of your place: "
   place <- getLine
   if (placeExists place list) then do
-    putStrLn (placeAvgToString place list)
+    putStrLn (placeAvgToStr place list)
     return list
     else do
       putStrLn (printf "%s was not found, please try again" place)
@@ -250,15 +319,9 @@ option "3" list = do
   return list
 
 option "4" list = do
-  putStrLn "How many days ago?"
-  days <- getLine
-  if (not (validInt days) || days < "1" || days > "7") then do
-    putStrLn "Invalid input"
-    option "4" list
-    else do
-      let x = (read days :: Int)
-      putStr(displayCityNames (dryPlacesInXDays x list))
-      return list
+  days <- getRainfallDay
+  putStr(placeNames (dryPlacesInXDays days list))
+  return list
 
 option "5" list = do
   rainfallFigs <- getRainfallUpdates list []
@@ -271,7 +334,7 @@ option "6" list = do
   place <- getLine
   if (placeExists place list) then do
     let filteredList = removePlace place list
-    newPlace <- createPlace
+    newPlace <- createPlace list
     let newList = addPlace newPlace filteredList
     putStrLn (placesToString newList)
     return newList
@@ -280,8 +343,9 @@ option "6" list = do
       option "6" list
 
 option "7" list = do
-  let dryList = dryPlacesInXDays 1 list
   coords <- getCoords
+  day <- getRainfallDay
+  let dryList = dryPlacesInXDays day list
   let closestPlace = getClosest coords dryList
   putStrLn (placesToString [closestPlace])
   return list
@@ -327,6 +391,6 @@ main = do
   raw <- readFile "places.txt"
   let list = (read raw :: [Place])
   clearScreen
-  putStr (displayCityNames list)
+  putStr (placeNames list)
   newList <- menu list
   writeFile "places.txt" (show newList)
