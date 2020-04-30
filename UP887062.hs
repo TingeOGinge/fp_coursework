@@ -46,26 +46,30 @@ testData = [
 --  Your functional code goes here
 --
 
--- Used to display the names of all currently recorded places
-placeNames :: [Place] -> Name
-placeNames = unlines . map(\(Place name c r) -> name)
+-- Used to display the names of all currently recorded places (demo 1)
+placeNames :: [Place] -> String
+placeNames = unlines . map(\(Place name _ _) -> name)
+
+--------------------------------------------------------------------------------
 
 -- Retrieve a place by its name
 -- UI prevents duplicate names and the hardcoded data can be verified
 -- Consequently no duplicates are expected in this function
 getPlace :: Name -> [Place] -> Place
-getPlace n = head . filter(\(Place name c r) -> n == name)
+getPlace n = head . filter(\(Place name _ _) -> n == name)
 
--- Retrieve the average rainfall of a given place
+-- Retrieve the average rainfall of a given place (demo 2)
 getAvg :: Place -> Float
-getAvg (Place n c r) = realToFrac (sum r) / genericLength r
+getAvg (Place _ _ r) = realToFrac (sum r) / genericLength r
 
--- Converts place into a string containing the place name and rainfall average
+-- Finds a place by its name and returns the average rainfall as a String
 placeAvgToStr :: Name -> [Place] -> String
-placeAvgToStr n p = printf "+ %s avg: %.2f" n (getAvg (getPlace n p))
+placeAvgToStr n places = printf "+ %s avg: %.2f" n (getAvg (getPlace n places))
 
--- The following four functions are used to format the data for output in
--- demo 3 etc
+--------------------------------------------------------------------------------
+
+-- The following four functions are used to format the data, showing each place
+-- with the name and rainfall figures (demo 3)
 formatCol :: Int -> String
 formatCol x = printf "%5d" x
 
@@ -73,43 +77,55 @@ formatRain :: Rainfall -> String
 formatRain = unwords . map formatCol
 
 showRainfallList :: Place -> String
-showRainfallList (Place n c r) = printf "%-12s %s" n (formatRain r)
+showRainfallList (Place n _ r) = printf "%-12s %s" n (formatRain r)
 
+-- Takes the entire lists and maps them to the formatted strings before unlining
 placesToString :: [Place] -> String
 placesToString = unlines . map (showRainfallList)
 
+--------------------------------------------------------------------------------
+
 -- The two functions below are used to retrieve locations that were dry a given
--- amount of days ago
+-- amount of days ago (demo 4)
 dryInXDays :: Place -> Int -> Bool
-dryInXDays (Place n c rain) x = rain!!(x-1) == 0
+dryInXDays (Place _ _ rain) x = rain!!(x-1) == 0
 
 dryPlacesInXDays :: Int -> [Place] -> [Place]
 dryPlacesInXDays x = filter (\p -> (dryInXDays p x))
 
+--------------------------------------------------------------------------------
+
 -- The following two functions are used to update the latest rainfall figures
--- of all places in the given list
+-- of all places in the given list (demo 5)
 updatePlaceRain :: Int -> Place -> Place
 updatePlaceRain x (Place n c rain) = Place n c (init (x:rain))
 
 updateAllPlaces :: [Int] -> [Place] -> [Place]
 updateAllPlaces = zipWith (updatePlaceRain)
 
--- The following two functions are used to complete demo 6
--- I opted for two separate functions rather than a single function that
--- replaces a location in place using list comprehension
--- The separate functions offer a functional approach and could be applied in
--- future scenarios without adaptation
-removePlace:: Name -> [Place] -> [Place]
-removePlace s = filter(\(Place n c r) -> n /= s)
+--------------------------------------------------------------------------------
 
+-- The following two functions complete demo 6.
+-- This solution was favoured over a single line solution using list
+-- comprehension, as I decided it would be better to access each step
+-- individually if needed, rather than save two lines of code.
+
+-- This function is used to remove a place from a list when given it's name
+removePlace:: Name -> [Place] -> [Place]
+removePlace s = filter(\(Place n _ _) -> n /= s)
+
+-- This function takes a place and adds it to the list.
+-- UI handles the input validation so a valid Place is expected
 addPlace :: Place -> [Place] -> [Place]
 addPlace place list = list ++ [place]
 
+--------------------------------------------------------------------------------
+
 -- The following 5 functions are used to locate the nearest place to given Coords
--- First we calculate and assign the distance of each place to the target
--- Then we sort the new list by these distances
--- Next we take the first (closest) element and return the place without the
--- distance value
+-- First we calculate and assign the distance of each Place to the target Coords
+-- Then we sort the list by these distances
+-- Finally we take the first (closest) element and return the place with the
+-- distance value stripped
 getDistance :: Coords -> Coords -> Float
 getDistance (x1, y1) (x2, y2) = sqrt( (x2-x1)^2 + (y2-y1)^2 )
 
@@ -129,9 +145,9 @@ getClosest c1 = stripDist . head . sortBy(compareDist) . map(assignDist c1)
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
--- The following functional code is used to support the user interface, not the
--- demos. I opted to keep it here to ensure complete separation of functional
--- and IO code
+-- The following functional code is used to support the user interface and
+-- rainfall map. I opted to keep it here to ensure complete separation of
+-- functional and IO code
 
 -- To convert the coordinates I used the following basic formula
 -- 1: Adjust all values 'n' so the lowest value becomes 1
@@ -140,7 +156,7 @@ getClosest c1 = stripDist . head . sortBy(compareDist) . map(assignDist c1)
 -- 3: Multiply the new 'n' value by the 'conversion factor'
 -- 3b (Y Coords only): For the Y coordinates I then flipped the values by the
 -- screen height
--- 4: use the round function to return an Integer
+-- 4: use the round function to return an Int
 convertYCoord :: Float -> Int
 convertYCoord n = round (50 - ((n - 48.2) * (50 / 12)))
 
@@ -149,13 +165,13 @@ convertXCoord n = round ((n + 7.4) * (80 / 8))
 
 -- The two functions are used to validate the UI input of place names
 isPlace :: Name -> Place -> Bool
-isPlace s (Place n c r) = s == n
+isPlace s (Place n _ _) = s == n
 
 placeExists :: Name -> [Place] -> Bool
 placeExists s = foldr (||) False . map(isPlace s)
 
 -- The next two functions are used to validate numerical input for coordinates
--- or rainfall figures
+-- or rainfall figures from the UI
 validInt :: String -> Bool
 validInt s = Nothing /= (readMaybe s :: Maybe Int)
 
@@ -230,6 +246,7 @@ writeAt position text = do
 -- Your rainfall map code goes here
 --
 
+-- Iterate through the list displaying each place using the converted Coords
 displayMap :: [Place] -> IO()
 displayMap [] = goTo(0, 50)
 displayMap ((Place n (y, x) r):xs) = do
@@ -246,7 +263,7 @@ getRainfallUpdates [] rainfallFigs = return rainfallFigs
 getRainfallUpdates ((Place name c r):xs) rainfallFigs = do
   putStr (printf "Enter the rainfall figure for %s: " name)
   i <- getLine
-  if (validInt i) then do
+  if (validInt i && not("-" `isInfixOf` i)) then do
     let newList = rainfallFigs ++ [(read i :: Int)]
     getRainfallUpdates xs newList
     else do
